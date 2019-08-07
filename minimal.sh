@@ -161,3 +161,4 @@ function color_print() {
     printf "${color}${modifier}$@${nocolor}\n"
 }
 
+main "$@"
