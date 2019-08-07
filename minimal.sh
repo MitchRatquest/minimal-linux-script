@@ -18,6 +18,9 @@ function main() {
     make_overlay
     make_busybox
     make_kernel
+
+    dvorak_setting
+
     apply_overlay
     compress_initrd
     make_iso
@@ -140,6 +143,13 @@ function make_iso() {
     ./
     cd "$topdir"
 }
+
+function dvorak_setting() {
+	mkdir -p "$topdir"/overlay/usr/share/kmaps
+	cp "$topdir"/dvorak.kmap overlay/usr/share/kmaps
+	sed -i 's|setsid cttyhack /bin/sh|loadkmap < /usr/share/kmaps/dvorak.kmap\nsetsid cttyhack /bin/sh|g'
+}
+
 
 function color_print() {
     case "$1" in
