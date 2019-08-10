@@ -7,7 +7,7 @@ function main() {
     topdir=$(pwd)
     install_fzy
     color_print green bold "Do you want a realtime linux kernel?"
-    realtime=$(echo -ne "yes\nno" | ./fzzy)
+    realtime=$(echo -ne "yes\nno" | ./fzf)
     if [[ "$realtime" == "yes" ]]; then
         choose_kernel_rt_patch
     else
@@ -26,20 +26,28 @@ function main() {
     make_iso
 }
 
-function install_fzy() {
-    if [ ! -d fzy ]; then
-        git clone https://github.com/jhawthorn/fzy.git
-        cd fzy
-        make
-        cp fzy ../fzzy
-        cd ../
-    fi
+function install_fzf() {
+   if [ ! -f fzf ]; then
+   machine=$(uname -m)
+   case $machine in
+	   x86_64*) target=amd64 ;;
+           i686*)   target=386   ;;
+	   armv7*)  target=arm7  ;;
+	   386*)    target=386   ;;
+	   amd64*)  target=amd64 ;;
+   esac
+   wget "https://github.com/junegunn/fzf-bin/releases/download/0.18.0/fzf-0.18.0-freebsd_${target}.tgz" -O fzf.tgz
+   tar xvf fzf.tgz
+   rm fzf.tgz
+   fi
+   export FZF_DEFAULT_OPTS='--height 40% --layout=reverse'
+   export FZF_DEFAULT_COMMAND='ls'
 }
 
 function choose_kernel_version() {
     KERNEL_BASE_URL=https://mirrors.edge.kernel.org/pub/linux/kernel/
     major=$(echo -ne "2.6\n3.x\n4.x\n5.x\n" | ./fzzy)
-    your_version=$(curl "$KERNEL_BASE_URL"v"$major/" | grep -Eo 'linux\-[0-9]\.[0-9]+\.[0-9]+' | uniq | ./fzzy)
+    your_version=$(curl "$KERNEL_BASE_URL"v"$major/" | grep -Eo 'linux\-[0-9]\.[0-9]+\.[0-9]+' | uniq | ./fzf)
     wget "$KERNEL_BASE_URL"v"$major/""$your_version".tar.gz
     tar xvf "$your_version".tar.gz
     color_print green bold "Kernel downloaded and extracted"
@@ -47,8 +55,8 @@ function choose_kernel_version() {
 
 function choose_kernel_rt_patch() {
     PATCH_BASE_URL=https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/
-    major=$(curl "$PATCH_BASE_URL" | grep -Eo '>[0-9]\.[0-9]{1,2}(\.[0-9]+)?\/' | sed 's|>||g' | sed 's|/||g' | ./fzzy)
-    your_version=$(curl "$PATCH_BASE_URL$major"/ | grep -Eo '>patch\-.*patch.gz' | sed 's|>||g' | sed 's|.patch.gz||g'| ./fzzy)
+    major=$(curl "$PATCH_BASE_URL" | grep -Eo '>[0-9]\.[0-9]{1,2}(\.[0-9]+)?\/' | sed 's|>||g' | sed 's|/||g' | ./fzf)
+    your_version=$(curl "$PATCH_BASE_URL$major"/ | grep -Eo '>patch\-.*patch.gz' | sed 's|>||g' | sed 's|.patch.gz||g'| ./fzf)
     wget  "$PATCH_BASE_URL$major"/"$your_version".patch.gz
     #get matching kernel version for your rt version
     KERNEL_BASE_URL=https://mirrors.edge.kernel.org/pub/linux/kernel/
@@ -65,7 +73,7 @@ function choose_kernel_rt_patch() {
 
 function choose_busybox_version() {
     BUSYBOX_BASE_URL=https://busybox.net/downloads/
-    busybox_version=$(curl "$BUSYBOX_BASE_URL" | grep -Eo "busybox-[0-9]\.[0-9]+(\.[0-9])?.tar.bz2" | sed 's|.tar.bz2||g' | uniq |  ./fzzy)
+    busybox_version=$(curl "$BUSYBOX_BASE_URL" | grep -Eo "busybox-[0-9]\.[0-9]+(\.[0-9])?.tar.bz2" | sed 's|.tar.bz2||g' | uniq |  ./fzf)
     wget "$BUSYBOX_BASE_URL""$busybox_version".tar.bz2
     tar xvf "$busybox_version".tar.bz2
     color_print green bold "Busybox downloaded"
@@ -73,7 +81,7 @@ function choose_busybox_version() {
 
 function choose_syslinux_version() {
     SYSLINUX_BASE_URL=https://mirrors.edge.kernel.org/pub/linux/utils/boot/syslinux/
-    SYSLINUX_VERSION=$(curl "$SYSLINUX_BASE_URL" | grep -Eo 'syslinux\-[0-9]\.[0-9]{2}\.tar\.gz' | uniq | ./fzzy)
+    SYSLINUX_VERSION=$(curl "$SYSLINUX_BASE_URL" | grep -Eo 'syslinux\-[0-9]\.[0-9]{2}\.tar\.gz' | uniq | ./fzf)
     wget "$SYSLINUX_BASE_URL""$SYSLINUX_VERSION"
     tar xvf "$SYSLINUX_VERSION"
     color_print green bold "Syslinux downloaded"
