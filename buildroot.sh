@@ -68,21 +68,22 @@ function populate_overlay() {
     mkdir -p overlay/usr/share/kmaps
     mkdir -p overlay/etc/init.d
     cp dvorak.kmap overlay/usr/share/kmaps/dvorak.kmap
-    echo -ne > overlay/etc/init.d/S99-dvorak
-    cat >> overlay/etc/init.d/S99-dvorak << EOF
-#!/bin/sh
+    create_sysvinit'etc/init.d/S99-dvorak' '#!/bin/sh
 loadkmap < /usr/share/kmaps/dvorak.kmap
-exit 0
-EOF
-    chmod 777 overlay/etc/init.d/S99-dvorak
-
-    echo -ne > overlay/etc/init.d/S98networkup
-    cat >>  overlay/etc/init.d/S98networkup << EOF
-#!/bin/sh
+exit 0'
+    create_sysvinit 'etc/init.d/S98networkup' '#!/bin/sh
 ip link set up eth0
 udhcpc eth0
-EOF
-    chmod 777 overlay/etc/init.d/S98networkup
+exit 0'
+}
+
+function create_sysvinit() {
+    name="$1"
+    shift
+    contents="$@"
+    echo -ne > overlay/"$name"
+    echo "$contents" >> overlay/"$name"
+    chmod 777 overlay/"$name"
 }
 
 function install_extras() {
