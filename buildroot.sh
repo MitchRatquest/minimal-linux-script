@@ -9,15 +9,19 @@ function main() {
 }
 
 function get_buildroot() {
-	commit=9b9abb0dd03114347d10d09131ad4e96f5583514
-	git clone https://github.com/buildroot/buildroot.git
-	cd buildroot
-	git checkout "$commit"
-	cd ..
+	if [ ! -d buildroot ]; then
+		commit=9b9abb0dd03114347d10d09131ad4e96f5583514
+		git clone https://github.com/buildroot/buildroot.git
+		cd buildroot
+		git checkout "$commit"
+		cd ..
+	fi
 }
 
 function set_configurations() {
-	make O=$PWD buildroot/ defconfig BR2_DEFCONFIG=br_defconfig
+	if [ ! -f .initial_br ]; then
+		make O=$PWD -C buildroot/ defconfig BR2_DEFCONFIG=br_defconfig
+	fi
 }
 
 function create_ovelay() {
