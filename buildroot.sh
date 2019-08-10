@@ -66,7 +66,6 @@ function create_overlay() {
 
 function populate_overlay() {
     mkdir -p overlay/usr/share/kmaps
-    mkdir -p overlay/etc/init.d
     cp dvorak.kmap overlay/usr/share/kmaps/dvorak.kmap
     create_sysvinit'etc/init.d/S99-dvorak' '#!/bin/sh
 loadkmap < /usr/share/kmaps/dvorak.kmap
@@ -78,6 +77,7 @@ exit 0'
 }
 
 function create_sysvinit() {
+    mkdir -p overlay/etc/init.d
     name="$1"
     shift
     contents="$@"
