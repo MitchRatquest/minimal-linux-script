@@ -135,9 +135,9 @@ function make_kernel() {
     make -j$(nproc) bzImage
     cp arch/x86/boot/bzImage "$topdir"/isoimage/kernel.gz
     cd "$topdir"/isoimage
-    cp "$topdir"/$(echo "${SYSLINUX_VERSION}" | sed 's|.tar.gz||g')/bios/core/isolinux.bin .
-    cp "$topdir"/$(echo "${SYSLINUX_VERSION}" | sed 's|.tar.gz||g')/bios/com32/elflink/ldlinux/ldlinux.c32 .
-    echo 'default kernel.gz initrd=rootfs.gz' > ./isolinux.cfg
+    cp "$topdir"/$(echo syslinux-"${SYSLINUX_VERSION}" | sed 's|.tar.gz||g')/bios/core/isolinux.bin .
+    cp "$topdir"/$(echo syslinux-"${SYSLINUX_VERSION}" | sed 's|.tar.gz||g')/bios/com32/elflink/ldlinux/ldlinux.c32 .
+    echo 'default kernel.gz initrd=rootfs.gz' > isolinux.cfg
 }
 
 function apply_overlay() {
@@ -166,7 +166,7 @@ function make_iso() {
 function dvorak_setting() {
     mkdir -p "$topdir"/overlay/usr/share/kmaps
     cp "$topdir"/dvorak.kmap overlay/usr/share/kmaps
-    sed -i 's|setsid cttyhack /bin/sh|loadkmap < /usr/share/kmaps/dvorak.kmap\nsetsid cttyhack /bin/sh|g'
+    sed -i 's|setsid cttyhack /bin/sh|loadkmap < /usr/share/kmaps/dvorak.kmap\nsetsid cttyhack /bin/sh|g' "$topdir"/"$busybox_version"/_install/init
 }
 
 
