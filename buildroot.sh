@@ -1,10 +1,13 @@
 #!/bin/bash
 
+EXTRA_PACKAGES=(gcc bash)
+
 function main() {
 	get_buildroot
 	set_configurations
 	create_overlay
 	populate_overlay
+	install_extras
 	make -j$(nproc)
 }
 
@@ -40,6 +43,17 @@ loadkmap < /usr/share/kmaps/dvorak.kmap
 exit 0
 EOF
 	chmod 777 overlay/etc/init.d/S99-dvorak
+}
+
+function install_extras() {
+	if [ ! -z "$EXTRA_PACKAGES" ]; then
+		wget https://raw.githubusercontent.com/minos-org/minos-static/master/static-get
+		chmod 777 static-get
+		cd overlay
+		for package in "$EXTRA_PACKAGES"; do
+			../static-get -x "$package"
+		done
+	fi
 }
 
 main "$@"
