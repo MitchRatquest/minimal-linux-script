@@ -1,51 +1,20 @@
-# Minimal Linux Script
+# Minimal Linux Scripts
+
+Big thank you to [ivandavidov's](https://github.com/ivandavidov) [Minimal Linux Live](http://github.com/ivandavidov/minimal) work, it laid the foundation for this. I was extremely impressed with their [minimal-linux-script](https://github.com/ivandavidov/minimal-linux-script) repo, which built me a bootable image in minutes.
+
+Inspired by this, a human-readable bare-minimun linux creation tool, I went wild. I had just found about [fzf](https://github.com/junegunn/fzf), a bash based fuzzy finder, and thought I could really make this thing fully featured without adding too many dependencies. This resulted in my version of minimal.sh, which can no longer be said to be human-readableo, or at least user friendly. It uses fzf, curl, grep, sed, uniq, tac, tar, patch, gunziy, and wget to create menus to select the versions of linux, realtime patches, busybox, and syslinux. I would recommend leaving syslinux's version defined in the file, as it then grabs the latest, which is the only one thats worked for me in all cases. 
+
+In theory, you should only have to ./minimal.sh and follow the prompts. I prioritized realtime kernel patches, as this is usually some hidden, obfuscated kernel feature. Most of my embedded images are for audio applications on armv7l cores, so I did this for me. I have also added a dvorak.kmap file, and a function to install this onto the minimal.sh system. This is also a poorly documented process if you are a beginner trying to figure out console keymaps. 
+
+After this minimal.sh script was complete, I decided to expand slightly and create a minimal buildroot image. This is more fully-featured, as it has networking support, a ton of packages, and a ton of configuration options. It still compiles a rather small iso. I have also added a little "What I wish I knew when I started doing all this" message at the end of compilation. To make things simpler, maybe, for an end user, you can also use the static-get utility to plop ready-made binaries into the target system, without spending ages running make. It seemed to work for gcc and bash, and it works on my other systems.
 
 One script which generates fully functional live Linux ISO image with minimal effort. This is based on the first published version of [Minimal Linux Live](http://github.com/ivandavidov/minimal) with some improvements taken from the next releases. All empty lines and comments have been removed and the script has been modified to reduce the overall length.
 
-The script below uses **Linux kernel 4.19.12**, **BusyBox 1.29.3** and **Syslinux 6.03**. The source bundles are downloaded and compiled automatically. If you are using [Ubuntu](http://ubuntu.com) or [Linux Mint](http://linuxmint.com), you should be able to resolve all build dependencies by executing the following command:
+While I'm rather fond of buildroot, I think the fzf finder to choose a linux kernel is geniunely useful outside of this project. I hope more people find out about fzf and make their lives easier.
 
-    sudo apt install wget make gawk gcc bc bison flex xorriso libelf-dev libssl-dev
+# Using minimal.sh
 
-After that simply run the below script. It doesn't require root privileges. In the end you should have a bootable ISO image named `minimal_linux_live.iso` in the same directory where you executed the script.
+You can run `minimal.sh` and follow the prompts. It uses a fuzzy finder, so you can either type and it will select the best match, use the arrow keys, page up/down, or double click with a mouse to select your entry. The default options are the latest versions. 
 
-    wget http://kernel.org/pub/linux/kernel/v4.x/linux-4.19.12.tar.xz
-    wget http://busybox.net/downloads/busybox-1.29.3.tar.bz2
-    wget http://kernel.org/pub/linux/utils/boot/syslinux/syslinux-6.03.tar.xz
-    mkdir isoimage
-    tar -xvf linux-4.19.12.tar.xz
-    tar -xvf busybox-1.29.3.tar.bz2
-    tar -xvf syslinux-6.03.tar.xz
-    cd busybox-1.29.3
-    make distclean defconfig
-    sed -i "s|.*CONFIG_STATIC.*|CONFIG_STATIC=y|" .config
-    make busybox install
-    cd _install
-    rm -f linuxrc
-    mkdir dev proc sys
-    echo '#!/bin/sh' > init
-    echo 'dmesg -n 1' >> init
-    echo 'mount -t devtmpfs none /dev' >> init
-    echo 'mount -t proc none /proc' >> init
-    echo 'mount -t sysfs none /sys' >> init
-    echo 'setsid cttyhack /bin/sh' >> init
-    chmod +x init
-    find . | cpio -R root:root -H newc -o | gzip > ../../isoimage/rootfs.gz
-    cd ../../linux-4.19.12
-    make mrproper defconfig bzImage
-    cp arch/x86/boot/bzImage ../isoimage/kernel.gz
-    cd ../isoimage
-    cp ../syslinux-6.03/bios/core/isolinux.bin .
-    cp ../syslinux-6.03/bios/com32/elflink/ldlinux/ldlinux.c32 .
-    echo 'default kernel.gz initrd=rootfs.gz' > ./isolinux.cfg
-    xorriso \
-        -as mkisofs \
-        -o ../minimal_linux_live.iso \
-        -b isolinux.bin \
-        -c boot.cat \
-        -no-emul-boot \
-        -boot-load-size 4 \
-        -boot-info-table \
-        ./
-    cd ..
+Please note that any kernel after 4.19 requires GCC to be at least 4.6.0. 
 
-Note that this script produces very small live Linux OS with working shell only and no network support. The network functionality has been implemented properly in the [Minimal Linux Live](http://github.com/ivandavidov/minimal) project which is extensively documented and more feature rich, yet still produces very small live Linux ISO image.
