@@ -5,7 +5,7 @@ function main() {
 	set_configurations
 	create_overlay
 	populate_overlay
-
+	make -j$(nproc)
 }
 
 function get_buildroot() {
