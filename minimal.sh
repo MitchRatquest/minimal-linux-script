@@ -46,10 +46,6 @@ function install_fzf() {
 
 function fzf() {
      ./fzf --height 40% --layout=reverse
-     if [[ $? != 0 ]]; then
-        color_print orange bold "You have exited early"
-        exit 99
-    fi
 }
 
 function choose_kernel_version() {
