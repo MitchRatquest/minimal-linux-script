@@ -2,6 +2,7 @@
 #space separated package names will be installed via static-get
 #for example: EXTRA_PACKAGES=(gcc bash gawk)
 EXTRA_PACKAGES=()
+DVORAK_KEYBOARD=no
 
 function main() {
     get_buildroot
@@ -38,16 +39,29 @@ function create_overlay() {
 }
 
 function populate_overlay() {
-    cd "$TOPDIR"
-    mkdir -p overlay/usr/share/kmaps
-    cp dvorak.kmap overlay/usr/share/kmaps/dvorak.kmap
     create_sysvinit 'S99-dvorak' '#!/bin/sh
 loadkmap < /usr/share/kmaps/dvorak.kmap
 exit 0'
-    create_sysvinit 'S98networkup' '#!/bin/sh
+    create_sysvinit 'S98-networkup' '#!/bin/sh
 ip link set up eth0
 udhcpc eth0
 exit 0'
+    install_dvorak_kmap
+}
+
+
+function install_dvorak_kmap() {
+    if [ "DVORAK_KEYBOARD" == 'yes' ]; then
+        install_a_file usr/share/kmaps dvorak.kmap
+    fi
+}
+
+function install_a_file() {
+    cd "$TOPDIR"
+    location="$1"
+    file="$2"
+    mkdir -p overlay/"$location"
+    cp "$1" overlay/"$location"/"$1"
 }
 
 function create_sysvinit() {
