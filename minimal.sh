@@ -1,12 +1,14 @@
 #!/bin/bash
+set -e
 KERNEL_VERSION=5.0.2
 BUSYBOX_VERSION=1.30.1
 SYSLINUX_VERSION=6.03
 
 function main() {
     topdir=$(pwd)
+    install_fzf
     color_print green bold "Do you want a realtime linux kernel?"
-    realtime=$(echo -ne "yes\nno" | ./fzf)
+    realtime=$(echo -ne "yes\nno" | fzf)
     if [[ "$realtime" == "yes" ]]; then
         choose_kernel_rt_patch
     else
@@ -16,6 +18,7 @@ function main() {
     choose_syslinux_version
     make_overlay
     make_busybox
+
     make_kernel
 
     dvorak_setting
@@ -27,26 +30,34 @@ function main() {
 
 function install_fzf() {
    if [ ! -f fzf ]; then
-   machine=$(uname -m)
-   case $machine in
-	   x86_64*) target=amd64 ;;
+       machine=$(uname -m)
+       case $machine in
+           x86_64*) target=amd64 ;;
            i686*)   target=386   ;;
-	   armv7*)  target=arm7  ;;
-	   386*)    target=386   ;;
-	   amd64*)  target=amd64 ;;
-   esac
-   wget "https://github.com/junegunn/fzf-bin/releases/download/0.18.0/fzf-0.18.0-freebsd_${target}.tgz" -O fzf.tgz
-   tar xvf fzf.tgz
-   rm fzf.tgz
+           armv7*)  target=arm7  ;;
+           386*)    target=386   ;;
+           amd64*)  target=amd64 ;;
+       esac
+       wget "https://github.com/junegunn/fzf-bin/releases/download/0.18.0/fzf-0.18.0-linux_${target}.tgz" -O fzf.tgz
+       tar xvf fzf.tgz
+       rm fzf.tgz
    fi
-   export FZF_DEFAULT_OPTS='--height 40% --layout=reverse'
-   export FZF_DEFAULT_COMMAND='ls'
+}
+
+function fzf() {
+     ./fzf --height 40% --layout=reverse
+     if [[ $? != 0 ]]; then
+        color_print orange bold "You have exited early"
+        exit 99
+    fi
 }
 
 function choose_kernel_version() {
     KERNEL_BASE_URL=https://mirrors.edge.kernel.org/pub/linux/kernel/
-    major=$(echo -ne "2.6\n3.x\n4.x\n5.x\n" | ./fzzy)
-    your_version=$(curl "$KERNEL_BASE_URL"v"$major/" | grep -Eo 'linux\-[0-9]\.[0-9]+\.[0-9]+' | uniq | ./fzf)
+    color_print green bold "Please select the major version: "
+    major=$(echo -ne "2.6\n3.x\n4.x\n5.x\n" | fzf)
+    color_print green bold "Please select your exact version: "
+    your_version=$(curl -s "$KERNEL_BASE_URL"v"$major/" | grep -Eo 'linux\-[0-9]\.[0-9]+\.[0-9]+' | uniq | tac  | fzf)
     wget "$KERNEL_BASE_URL"v"$major/""$your_version".tar.gz
     tar xvf "$your_version".tar.gz
     color_print green bold "Kernel downloaded and extracted"
@@ -54,8 +65,10 @@ function choose_kernel_version() {
 
 function choose_kernel_rt_patch() {
     PATCH_BASE_URL=https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/
-    major=$(curl "$PATCH_BASE_URL" | grep -Eo '>[0-9]\.[0-9]{1,2}(\.[0-9]+)?\/' | sed 's|>||g' | sed 's|/||g' | ./fzf)
-    your_version=$(curl "$PATCH_BASE_URL$major"/ | grep -Eo '>patch\-.*patch.gz' | sed 's|>||g' | sed 's|.patch.gz||g'| ./fzf)
+    color_print green bold "Please select the major version: "
+    major=$(curl -s "$PATCH_BASE_URL" | grep -Eo '>[0-9]\.[0-9]{1,2}(\.[0-9]+)?\/' | sed 's|>||g' | sed 's|/||g' | tac | fzf)
+    color_print green bold "Please select your exact version: "
+    your_version=$(curl -s "$PATCH_BASE_URL$major"/ | grep -Eo '>patch\-.*patch.gz' | sed 's|>||g' | sed 's|.patch.gz||g'| tac | fzf)
     wget  "$PATCH_BASE_URL$major"/"$your_version".patch.gz
     #get matching kernel version for your rt version
     KERNEL_BASE_URL=https://mirrors.edge.kernel.org/pub/linux/kernel/
@@ -71,19 +84,26 @@ function choose_kernel_rt_patch() {
 }
 
 function choose_busybox_version() {
+    color_print green bold "Please pick a busybox version:"
     BUSYBOX_BASE_URL=https://busybox.net/downloads/
-    busybox_version=$(curl "$BUSYBOX_BASE_URL" | grep -Eo "busybox-[0-9]\.[0-9]+(\.[0-9])?.tar.bz2" | sed 's|.tar.bz2||g' | uniq |  ./fzf)
+    busybox_version=$(curl -s "$BUSYBOX_BASE_URL" | grep -Eo "busybox-[0-9]\.[0-9]+(\.[0-9])?.tar.bz2" | sed 's|.tar.bz2||g' | uniq | tac | fzf)
     wget "$BUSYBOX_BASE_URL""$busybox_version".tar.bz2
-    tar xvf "$busybox_version".tar.bz2
     color_print green bold "Busybox downloaded"
+    tar xf "$busybox_version".tar.bz2
+    color_print green bold "Busybox extracted"
 }
 
 function choose_syslinux_version() {
-    SYSLINUX_BASE_URL=https://mirrors.edge.kernel.org/pub/linux/utils/boot/syslinux/
-    SYSLINUX_VERSION=$(curl "$SYSLINUX_BASE_URL" | grep -Eo 'syslinux\-[0-9]\.[0-9]{2}\.tar\.gz' | uniq | ./fzf)
-    wget "$SYSLINUX_BASE_URL""$SYSLINUX_VERSION"
-    tar xvf "$SYSLINUX_VERSION"
-    color_print green bold "Syslinux downloaded"
+    if [ -z $SYSLINUX_VERSION ]; then
+        SYSLINUX_BASE_URL=https://mirrors.edge.kernel.org/pub/linux/utils/boot/syslinux/
+        SYSLINUX_VERSION=$(curl -s "$SYSLINUX_BASE_URL" | grep -Eo 'syslinux\-[0-9]\.[0-9]{2}\.tar\.gz' | uniq | tac | fzf)
+        wget "$SYSLINUX_BASE_URL""$SYSLINUX_VERSION"
+        tar xf "$SYSLINUX_VERSION"
+        color_print green bold "Syslinux downloaded"
+    else
+        wget https://mirrors.edge.kernel.org/pub/linux/utils/boot/syslinux/syslinux-"${SYSLINUX_VERSION}".tar.gz
+        tar xvf syslinux-"${SYSLINUX_VERSION}".tar.gz
+    fi
 }
 
 function make_overlay() {
@@ -152,9 +172,9 @@ function make_iso() {
 }
 
 function dvorak_setting() {
-	mkdir -p "$topdir"/overlay/usr/share/kmaps
-	cp "$topdir"/dvorak.kmap overlay/usr/share/kmaps
-	sed -i 's|setsid cttyhack /bin/sh|loadkmap < /usr/share/kmaps/dvorak.kmap\nsetsid cttyhack /bin/sh|g'
+    mkdir -p "$topdir"/overlay/usr/share/kmaps
+    cp "$topdir"/dvorak.kmap overlay/usr/share/kmaps
+    sed -i 's|setsid cttyhack /bin/sh|loadkmap < /usr/share/kmaps/dvorak.kmap\nsetsid cttyhack /bin/sh|g'
 }
 
 
@@ -177,5 +197,14 @@ function color_print() {
     shift
     printf "${color}${modifier}$@${nocolor}\n"
 }
+
+function fancyf() {
+    fzf --prompt="Please select any of the below: " --height 40% --layout=reverse \
+    --preview '[[ $(file {} | grep -ic text ) == 0 ]] && echo {} is not a text file || ([[ $(stat --format %F {}) == "directory" ]] && ls {} || cat {}) 2> /dev/null | head -n 100' \
+    --preview-window=right:60%
+}
+
+export FZF_DEFAULT_OPTS='--height 40% --layout=reverse'
+export FZF_DEFAULT_COMMAND='ls'
 
 main "$@"
