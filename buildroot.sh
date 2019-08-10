@@ -50,7 +50,7 @@ function install_extras() {
 		wget https://raw.githubusercontent.com/minos-org/minos-static/master/static-get
 		chmod 777 static-get
 		cd overlay
-		for package in "$EXTRA_PACKAGES"; do
+		for package in "${EXTRA_PACKAGES[@]}"; do
 			../static-get -x "$package"
 		done
 	fi
