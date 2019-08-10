@@ -10,7 +10,7 @@ KERNEL_CONFIG=current
 #defconfig: about 6MB
 #builtin:   about 9MB
 #current  about 1199MB    (debian 9/bunsenlabs helium)
-
+DVORAK=no
 
 function main() {
     topdir=$(pwd)
@@ -167,9 +167,11 @@ function install_modules() { make -j$(nproc) INSTALL_MOD_PATH="$topdir"/"$busybo
 
 
 function dvorak_setting() {
-    mkdir -p "$topdir"/overlay/usr/share/kmaps
-    cp "$topdir"/dvorak.kmap "$topdir"/overlay/usr/share/kmaps
-    sed -i 's|setsid cttyhack /bin/sh|loadkmap < /usr/share/kmaps/dvorak.kmap\nsetsid cttyhack /bin/sh|g' "$topdir"/"$busybox_version"/_install/init
+    if [ '$DVORAK' == 'yes' ]; then 
+       mkdir -p "$topdir"/overlay/usr/share/kmaps
+       cp "$topdir"/dvorak.kmap "$topdir"/overlay/usr/share/kmaps
+       sed -i 's|setsid cttyhack /bin/sh|loadkmap < /usr/share/kmaps/dvorak.kmap\nsetsid cttyhack /bin/sh|g' "$topdir"/"$busybox_version"/_install/init
+    fi
 }
 
 function apply_overlay() {
