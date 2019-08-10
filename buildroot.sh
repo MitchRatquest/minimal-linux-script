@@ -1,7 +1,7 @@
 #!/bin/bash
 
 EXTRA_PACKAGES=(gcc bash)
-USE_EXTERNAL_TOOLCHAIN= #can be blank for buildroot's, musl, or gcc
+USE_EXTERNAL_TOOLCHAIN= #can be 'no' for buildroot, or 'musl', or 'gcc'
 
 function main() {
     get_buildroot
@@ -11,6 +11,7 @@ function main() {
     populate_overlay
     install_extras
     make -j$(nproc)
+    boot_image
 }
 
 function get_buildroot() {
@@ -27,7 +28,7 @@ function get_external_toolchain() {
     case "$USE_EXTERNAL_TOOLCHAIN" in
         gcc*) get_and_configure_toolchain gcc   ;;
         musl*) get_and_configure_toolchain musl ;;
-        *)  echo -ne                            ;;
+        no*)  echo -ne                          ;;
     esac
 }
 
@@ -74,6 +75,14 @@ loadkmap < /usr/share/kmaps/dvorak.kmap
 exit 0
 EOF
     chmod 777 overlay/etc/init.d/S99-dvorak
+
+    echo -ne > overlay/etc/init.d/S98networkup
+    cat >>  overlay/etc/init.d/S98networkup << EOF
+#!/bin/sh
+ip link set up eth0
+udhcpc eth0
+EOF
+    chmod 777 overlay/etc/init.d/S98networkup
 }
 
 function install_extras() {
@@ -87,6 +96,11 @@ function install_extras() {
             ../static-get -x "$package"
         done
     fi
+}
+
+
+function boot_image() {
+    qemu-system-x86_64 -m 512M -cdrom images/rootfs.iso9660 -boot d -vga std -smp 4 -device e1000
 }
 
 main "$@"
