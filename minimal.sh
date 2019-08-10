@@ -4,7 +4,12 @@ KERNEL_VERSION=5.0.2
 BUSYBOX_VERSION=1.30.1
 SYSLINUX_VERSION=6.03
 #shipped defconfig vs current kernel's config, modules vs built-in
-KERNEL_CONFIG=defconfig
+#defconfig modconfig builtin current
+KERNEL_CONFIG=current
+#iso sizes:
+#defconfig: about 6MB
+#builtin:   about 9MB
+#current  about 1199MB    (debian 9/bunsenlabs helium)
 
 
 function main() {
@@ -107,6 +112,7 @@ function choose_syslinux_version() {
 
 function exists() { [ -e "$1" ]; }
 function doesnt_exist() { [ ! -e "$1" ]; }
+function make() { make -j$(nproc) "$@"; }
 
 function make_overlay() {
     cd "$topdir"
@@ -140,27 +146,25 @@ function make_kernel() {
     cd "$topdir"/$(echo "$kernel_version" | sed 's|.tar.gz||g')
     color_print green bold "Starting kernel compilation"
     case $KERNEL_CONFIG in
-        defconfig*)  yes '' | make mrproper bzImage -j$(nproc)                  ;;
-        modconfig*)  yes '' | make mrproper localmodconfig bzImage -j$(nproc)   ;;
-        builtin*)    yes '' | make mrproper localyesconfig bzImage -j$(nproc)   ;;
-        current*)    get_current_config | yes '' | make mrproper bzImage -j$(nproc) ;;
+        defconfig*)  make_defconfig                  ;;
+        modconfig*)  make_modconfig; install_modules ;;
+        builtin*)    make_builtin                    ;;
+        current*)    make_current; install_modules   ;;
     esac        
-    make -j$(nproc) bzImage
-    case $KERNEL_CONFIG in
-        modconfig*) make -j$(nproc) INSTALL_MOD_PATH="$topdir"/"$busybox_version"/_install modules_install ;;
-        current*)   make -j$(nproc) INSTALL_MOD_PATH="$topdir"/"$busybox_version"/_install modules_install ;;
-    esac
     cp arch/x86/boot/bzImage "$topdir"/isoimage/kernel.gz
     cd "$topdir"/isoimage
     cp "$topdir"/$(echo syslinux-"${SYSLINUX_VERSION}" | sed 's|.tar.gz||g')/bios/core/isolinux.bin .
     cp "$topdir"/$(echo syslinux-"${SYSLINUX_VERSION}" | sed 's|.tar.gz||g')/bios/com32/elflink/ldlinux/ldlinux.c32 .
     echo 'default kernel.gz initrd=rootfs.gz' > isolinux.cfg
 }
+function make_defconfig() { yes '' | make mrproper bzImage -j$(nproc); }
+function make_modconfig() { yes '' | make mrproper localmodconfig bzImage modules -j$(nproc); }
+function make_builtin() { yes '' | make mrproper localyesconfig bzImage -j$(nproc);  }
+function make_current() { get_current_config | yes '' | make mrproper bzImage modules -j$(nproc); }
+function get_current_config() { cp /boot/$(ls /boot | grep config) .config; }
+function install_modules() { make -j$(nproc) INSTALL_MOD_PATH="$topdir"/"$busybox_version"/_install modules_install; }
 
-function get_current_config() {
-    #making some wild assumptions here
-    cp /boot/$(ls /boot | grep config) .config
-}
+
 
 function dvorak_setting() {
     mkdir -p "$topdir"/overlay/usr/share/kmaps
@@ -181,7 +185,7 @@ function make_iso() {
     cd "$topdir"/isoimage
     xorriso \
         -as mkisofs \
-        -o "$topdir"/minimal_linux_live.iso \
+        -o ../minimal_linux_live.iso \
         -b isolinux.bin \
         -c boot.cat \
         -no-emul-boot \
