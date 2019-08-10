@@ -18,18 +18,17 @@ function main() {
     choose_syslinux_version
     make_overlay
     make_busybox
-
     make_kernel
 
     dvorak_setting
-
     apply_overlay
     compress_initrd
+
     make_iso
 }
 
 function install_fzf() {
-   if [ ! -f fzf ]; then
+   if doesnt_exist fzf; then
        machine=$(uname -m)
        case $machine in
            x86_64*) target=amd64 ;;
@@ -103,6 +102,9 @@ function choose_syslinux_version() {
     fi
 }
 
+function exists() { [ -e "$1" ]; }
+function doesnt_exist() { [ ! -e "$1" ]; }
+
 function make_overlay() {
     cd "$topdir"
     mkdir -p isoimage
@@ -112,7 +114,10 @@ function make_overlay() {
 
 function make_busybox() {
     cd "$topdir"/"${busybox_version}"
-    make distclean defconfig 
+    if exists _install; then
+        rm -rf _install
+    fi
+    make distclean defconfig
     sed -i "s|.*CONFIG_STATIC.*|CONFIG_STATIC=y|" .config
     make busybox install -j$(nproc)
     cd _install
@@ -131,7 +136,7 @@ function make_kernel() {
     color_print green bold "Starting kernel configuration"
     cd "$topdir"/$(echo "$kernel_version" | sed 's|.tar.gz||g')
     color_print green bold "Starting kernel compilation"
-    yes '' | make localmodconfig bzImage -j$(nproc)
+    yes '' | make localyesconfig bzImage -j$(nproc)
     make -j$(nproc) bzImage
     cp arch/x86/boot/bzImage "$topdir"/isoimage/kernel.gz
     cd "$topdir"/isoimage
@@ -140,8 +145,14 @@ function make_kernel() {
     echo 'default kernel.gz initrd=rootfs.gz' > isolinux.cfg
 }
 
+function dvorak_setting() {
+    mkdir -p "$topdir"/overlay/usr/share/kmaps
+    cp "$topdir"/dvorak.kmap "$topdir"/overlay/usr/share/kmaps
+    sed -i 's|setsid cttyhack /bin/sh|loadkmap < /usr/share/kmaps/dvorak.kmap\nsetsid cttyhack /bin/sh|g' "$topdir"/"$busybox_version"/_install/init
+}
+
 function apply_overlay() {
-    cp -a "$overlay/*" "$topdir"/"${busybox_version}"/_install
+    cp -a "$overlay/"* "$topdir"/"${busybox_version}"/_install
 }
 
 function compress_initrd() {
@@ -163,11 +174,6 @@ function make_iso() {
     cd "$topdir"
 }
 
-function dvorak_setting() {
-    mkdir -p "$topdir"/overlay/usr/share/kmaps
-    cp "$topdir"/dvorak.kmap overlay/usr/share/kmaps
-    sed -i 's|setsid cttyhack /bin/sh|loadkmap < /usr/share/kmaps/dvorak.kmap\nsetsid cttyhack /bin/sh|g' "$topdir"/"$busybox_version"/_install/init
-}
 
 
 function color_print() {
