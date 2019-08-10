@@ -3,6 +3,9 @@ set -e
 KERNEL_VERSION=5.0.2
 BUSYBOX_VERSION=1.30.1
 SYSLINUX_VERSION=6.03
+#shipped defconfig vs current kernel's config, modules vs built-in
+KERNEL_CONFIG=defconfig
+
 
 function main() {
     topdir=$(pwd)
@@ -136,13 +139,27 @@ function make_kernel() {
     color_print green bold "Starting kernel configuration"
     cd "$topdir"/$(echo "$kernel_version" | sed 's|.tar.gz||g')
     color_print green bold "Starting kernel compilation"
-    yes '' | make localyesconfig bzImage -j$(nproc)
+    case $KERNEL_CONFIG in
+        defconfig*)  yes '' | make mrproper bzImage -j$(nproc)                  ;;
+        modconfig*)  yes '' | make mrproper localmodconfig bzImage -j$(nproc)   ;;
+        builtin*)    yes '' | make mrproper localyesconfig bzImage -j$(nproc)   ;;
+        current*)    get_current_config | yes '' | make mrproper bzImage -j$(nproc) ;;
+    esac        
     make -j$(nproc) bzImage
+    case $KERNEL_CONFIG in
+        modconfig*) make -j$(nproc) INSTALL_MOD_PATH="$topdir"/"$busybox_version"/_install modules_install ;;
+        current*)   make -j$(nproc) INSTALL_MOD_PATH="$topdir"/"$busybox_version"/_install modules_install ;;
+    esac
     cp arch/x86/boot/bzImage "$topdir"/isoimage/kernel.gz
     cd "$topdir"/isoimage
     cp "$topdir"/$(echo syslinux-"${SYSLINUX_VERSION}" | sed 's|.tar.gz||g')/bios/core/isolinux.bin .
     cp "$topdir"/$(echo syslinux-"${SYSLINUX_VERSION}" | sed 's|.tar.gz||g')/bios/com32/elflink/ldlinux/ldlinux.c32 .
     echo 'default kernel.gz initrd=rootfs.gz' > isolinux.cfg
+}
+
+function get_current_config() {
+    #making some wild assumptions here
+    cp /boot/$(ls /boot | grep config) .config
 }
 
 function dvorak_setting() {
