@@ -69,9 +69,8 @@ function install_extras() {
         fi
         cd overlay
         for package in "${EXTRA_PACKAGES[@]}"; do
-            ../static-get -x "$package"
-            cd "$package*"
-            cp -a ../
+            ../static-get -o "$package" "$package"
+            tar xvf "$package"
         done
     fi
 }
