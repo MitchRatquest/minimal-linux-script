@@ -1,7 +1,7 @@
 #!/bin/bash
 
 EXTRA_PACKAGES=(gcc bash)
-USE_EXTERNAL_GCC=no
+USE_EXTERNAL_TOOLCHAIN= #can be blank for buildroot's, musl, or gcc
 
 function main() {
     get_buildroot
@@ -24,14 +24,24 @@ function get_buildroot() {
 }
 
 function get_external_toolchain() {
-    if [ "$USE_EXTERNAL_GCC" == 'yes' ]; then
-        if [ ! -f static-get ]; then
-            wget https://raw.githubusercontent.com/minos-org/minos-static/master/static-get
-            chmod 777 static-get
-        fi
-        mkdir external_toolchain
-        cd external_toolchain
-        ../static-get -x gcc #needs to be >= 4.6.0 for linux >= 4.19 https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=cafa0010cd51fb711fdcb50fc55f394c5f167a0a
+    case "$USE_EXTERNAL_TOOLCHAIN" in
+        gcc*) get_and_configure_toolchain gcc   ;;
+        musl*) get_and_configure_toolchain musl ;;
+        *)  echo -ne                            ;;
+    esac
+}
+
+function get_and_configure_toolchain() {
+    #needs to be >= 4.6.0 for linux >= 4.19 
+    #https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=cafa0010cd51fb711fdcb50fc55f394c5f167a0a
+    toolchain="$1"
+    if [ ! -f static-get ]; then
+        wget https://raw.githubusercontent.com/minos-org/minos-static/master/static-get
+        chmod 777 static-get
+    fi
+    mkdir external_toolchain
+    cd external_toolchain
+    ../static-get -x "$1"
 #• Use a completely custom external toolchain. This is particularly useful for toolchains generated using crosstool-NG or with
 #Buildroot itself. To do this, select the Custom toolchain solution in the Toolchain list. You need to fill the Toolch
 #ain path, Toolchain prefix and External toolchain C library options. Then, you have to tell Buildroot
