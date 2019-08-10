@@ -24,7 +24,7 @@ function set_configurations() {
 	fi
 }
 
-function create_ovelay() {
+function create_overlay() {
 	mkdir -p overlay
 }
 
