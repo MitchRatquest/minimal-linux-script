@@ -61,8 +61,14 @@ function choose_kernel_version() {
     major=$(echo -ne "2.6\n3.x\n4.x\n5.x\n" | tac |  fzf)
     color_print green bold "Please select your exact version: "
     your_version=$(curl -s "$KERNEL_BASE_URL"v"$major/" | grep -Eo 'linux\-[0-9]\.[0-9]+\.[0-9]+' | uniq | tac  | fzf)
-    wget "$KERNEL_BASE_URL"v"$major/""$your_version".tar.gz
-    tar xvf "$your_version".tar.gz
+    if [ -f "${your_version}.tar.gz" ]; then
+        color_print green bold "Kernel already downloaded"
+    else
+        color_print green bold "Downloading kernel"
+        wget "$KERNEL_BASE_URL"v"$major/""$your_version".tar.gz
+    fi
+    color_print green bold "Extracting kernel"
+    tar xf "$your_version".tar.gz
     kernel_version=$your_version
     color_print green bold "Kernel downloaded and extracted"
 }
@@ -78,10 +84,13 @@ function choose_kernel_rt_patch() {
     KERNEL_BASE_URL=https://mirrors.edge.kernel.org/pub/linux/kernel/
     kernel_major="${major:0:1}.x"
     kernel_version=$(echo "$your_version" | sed 's|patch|linux|g' | sed 's|-rt.*||g').tar.gz
+    color_print green bold "Downloading kernel"
     wget "$KERNEL_BASE_URL"v"$kernel_major/""$kernel_version"
-    tar xvf "$kernel_version"
+    color_print green bold "Extracting kernel"
+    tar xf "$kernel_version"
     gunzip "$your_version".patch.gz
     cd "$topdir"/$(echo "$kernel_version" | sed 's|.tar.gz||g')
+    color_print green bold "Applying realtime patch"
     patch -p1 < ../"$your_version".patch
     cd "$topdir"
     color_print green bold "Kernel downloaded, extracted, and patched"
@@ -91,8 +100,10 @@ function choose_busybox_version() {
     color_print green bold "Please pick a busybox version:"
     BUSYBOX_BASE_URL=https://busybox.net/downloads/
     busybox_version=$(curl -s "$BUSYBOX_BASE_URL" | grep -Eo "busybox-[0-9]\.[0-9]+(\.[0-9])?.tar.bz2" | sed 's|.tar.bz2||g' | uniq | tac | fzf)
+    color_print green bold "Downloading busybox"
     wget "$BUSYBOX_BASE_URL""$busybox_version".tar.bz2
     color_print green bold "Busybox downloaded"
+    color_print green bold "Extracting busybox"
     tar xf "$busybox_version".tar.bz2
     color_print green bold "Busybox extracted"
 }
@@ -101,12 +112,17 @@ function choose_syslinux_version() {
     if [ -z $SYSLINUX_VERSION ]; then
         SYSLINUX_BASE_URL=https://mirrors.edge.kernel.org/pub/linux/utils/boot/syslinux/
         SYSLINUX_VERSION=$(curl -s "$SYSLINUX_BASE_URL" | grep -Eo 'syslinux\-[0-9]\.[0-9]{2}\.tar\.gz' | uniq | tac | fzf)
+        color_print green bold "Downloading syslinux"
         wget "$SYSLINUX_BASE_URL""$SYSLINUX_VERSION"
+        color_print green bold "Extracting syslinux"
         tar xf "$SYSLINUX_VERSION"
-        color_print green bold "Syslinux downloaded"
+        color_print green bold "Syslinux downloaded and extracted"
     else
+        color_print green bold "Downloading syslinux"
         wget https://mirrors.edge.kernel.org/pub/linux/utils/boot/syslinux/syslinux-"${SYSLINUX_VERSION}".tar.gz
-        tar xvf syslinux-"${SYSLINUX_VERSION}".tar.gz
+        color_print green bold "Extracting syslinux"
+        tar xf syslinux-"${SYSLINUX_VERSION}".tar.gz
+        color_print green bold "Syslinux downloaded and extracted"
     fi
 }
 
