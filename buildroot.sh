@@ -21,6 +21,7 @@ function get_buildroot() {
 function set_configurations() {
 	if [ ! -f .initial_br ]; then
 		make O=$PWD -C buildroot/ defconfig BR2_DEFCONFIG=br_defconfig
+		touch .initial_br
 	fi
 }
 
