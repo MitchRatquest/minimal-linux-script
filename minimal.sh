@@ -8,7 +8,7 @@ function main() {
     topdir=$(pwd)
     install_fzf
     color_print green bold "Do you want a realtime linux kernel?"
-    realtime=$(echo -ne "yes\nno" | fzf)
+    realtime=$(echo -ne "no\nyes" | fzf)
     if [[ "$realtime" == "yes" ]]; then
         choose_kernel_rt_patch
     else
@@ -129,13 +129,8 @@ function make_busybox() {
 function make_kernel() {
     color_print green bold "Starting kernel configuration"
     cd "$topdir"/$(echo "$kernel_version" | sed 's|.tar.gz||g')
-    bad_modules=$(make localmodconfig 2>&1 | awk '/\!/ {print $1}')
-    lsmod | grep -v "${bad_modules[@]}" > mylsmod
-    make clean
     color_print green bold "Starting kernel compilation"
-    yes '' | make LSMOD=$(pwd)/mylsmod localmodconfig  #bzImage -j$(nproc)
-    #yes '' | make LSMOD=$(pwd)/mylsmod mrproper localmodconfig 
-    #make mrproper bzImage -j$(nproc)
+    yes '' | make localmodconfig bzImage -j$(nproc)
     make -j$(nproc) bzImage
     cp arch/x86/boot/bzImage "$topdir"/isoimage/kernel.gz
     cd "$topdir"/isoimage
