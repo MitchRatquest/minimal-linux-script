@@ -38,7 +38,7 @@ function install_fzf() {
            386*)    target=386   ;;
            amd64*)  target=amd64 ;;
        esac
-       wget "https://github.com/junegunn/fzf-bin/releases/download/0.18.0/fzf-0.18.0-linux_${target}.tgz" -O fzf.tgz
+       wget -q "https://github.com/junegunn/fzf-bin/releases/download/0.18.0/fzf-0.18.0-linux_${target}.tgz" -O fzf.tgz
        tar xvf fzf.tgz
        rm fzf.tgz
    fi
@@ -51,11 +51,12 @@ function fzf() {
 function choose_kernel_version() {
     KERNEL_BASE_URL=https://mirrors.edge.kernel.org/pub/linux/kernel/
     color_print green bold "Please select the major version: "
-    major=$(echo -ne "2.6\n3.x\n4.x\n5.x\n" | fzf)
+    major=$(echo -ne "2.6\n3.x\n4.x\n5.x\n" | tac |  fzf)
     color_print green bold "Please select your exact version: "
     your_version=$(curl -s "$KERNEL_BASE_URL"v"$major/" | grep -Eo 'linux\-[0-9]\.[0-9]+\.[0-9]+' | uniq | tac  | fzf)
     wget "$KERNEL_BASE_URL"v"$major/""$your_version".tar.gz
     tar xvf "$your_version".tar.gz
+    kernel_version=$your_version
     color_print green bold "Kernel downloaded and extracted"
 }
 
