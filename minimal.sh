@@ -5,7 +5,6 @@ SYSLINUX_VERSION=6.03
 
 function main() {
     topdir=$(pwd)
-    install_fzy
     color_print green bold "Do you want a realtime linux kernel?"
     realtime=$(echo -ne "yes\nno" | ./fzf)
     if [[ "$realtime" == "yes" ]]; then
