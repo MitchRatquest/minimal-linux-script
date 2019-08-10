@@ -36,3 +36,5 @@ exit 0
 EOF
 	chmod 777 overlay/etc/init.d/S99-dvorak
 }
+
+main "$@"
