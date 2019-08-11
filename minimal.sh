@@ -96,7 +96,7 @@ function choose_kernel_rt_patch() {
     fi
     prompt "Extracting kernel"
     tar xf "$linux_version".tar.gz
-    gunzip "$patch_version".patch.gz
+    gunzip -f "$patch_version".patch.gz
     cd "$topdir"/$(echo "$linux_version" | sed 's|.tar.gz||g')
     if [ ! -f .kernel_patched ]; then
         prompt "Applying realtime patch"
