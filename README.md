@@ -21,3 +21,8 @@ Please note that any kernel after 4.19 requires GCC to be at least 4.6.0.
 # Using buildroot.sh
 
 run `./buildroot.sh` and wait about 30 minutes. This'll generate a basic iso, just like minimal, but with some added options. Notably, the entire buildroot infrastructure of packages, tons more options, external toolchains, whatever. If you don't want to build a billion dependencies, you can also add any binary to the EXTRA_PACKAGES variable in the buildroot.sh script. This'll use static-get to throw stuff into the overlay. This is a workaround for possibly shipping a buildroot system with gcc on it, for example. 
+
+
+# minimal.sh example
+
+![Example](./example-minimal.svg)
