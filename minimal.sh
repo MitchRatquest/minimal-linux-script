@@ -62,7 +62,7 @@ function choose_kernel_version() {
     major_linux_version=$(echo "$message"| fzf)
     prompt "Please select your exact version: "
     linux_version=$(curl -s "$KERNEL_BASE_URL"v"$major_linux_version/" | grep -Eo 'linux\-[0-9]\.[0-9]+\.[0-9]+' | uniq | tac | fzf)
-    if [ -f "${linux_version}.tar.gz" ]; then
+    if [ -f "$linux_version".tar.gz ]; then
         prompt "Kernel already downloaded"
     else
         prompt "Downloading kernel"
@@ -127,7 +127,6 @@ function choose_busybox_version() {
         prompt "Busybox already downloaded and extracted"
     fi
 }
-
 
 function choose_syslinux_version() {
     if [ -z $SYSLINUX_VERSION ]; then
@@ -210,7 +209,7 @@ function dvorak_setting() {
 }
 
 function apply_overlay() {
-    cp -a "$overlay/"* "$topdir"/"${busybox_version}"/_install
+    cp -a "$overlay"/* "$topdir"/"${busybox_version}"/_install
 }
 
 function compress_initrd() {
