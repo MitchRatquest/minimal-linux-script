@@ -95,7 +95,7 @@ function choose_kernel_rt_patch() {
         wget "$KERNEL_BASE_URL"v"$major_linux_version"/"$linux_version".tar.gz
     fi
     prompt "Extracting kernel"
-    tar xf "$linux_version"
+    tar xf "$linux_version".tar.gz
     gunzip "$patch_version".patch.gz
     cd "$topdir"/$(echo "$linux_version" | sed 's|.tar.gz||g')
     if [ ! -f .kernel_patched ]; then
