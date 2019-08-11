@@ -5,17 +5,17 @@ BUSYBOX_VERSION=1.30.1
 SYSLINUX_VERSION=6.03
 #shipped defconfig vs current kernel's config, modules vs built-in
 #defconfig modconfig builtin current
-KERNEL_CONFIG=current
+KERNEL_CONFIG=defconfig
 #iso sizes:
 #defconfig: about 6MB
 #builtin:   about 9MB
-#current  about 1199MB    (debian 9/bunsenlabs helium)
+#current: about 1199MB    (debian 9/bunsenlabs helium)
 DVORAK=no
 
 function main() {
     topdir=$(pwd)
     install_fzf
-    color_print green bold "Do you want a realtime linux kernel?"
+    prompt "Do you want a realtime linux kernel?"
     realtime=$(echo -ne "no\nyes" | fzf)
     if [[ "$realtime" == "yes" ]]; then
         choose_kernel_rt_patch
@@ -51,78 +51,95 @@ function install_fzf() {
    fi
 }
 
-function fzf() {
-     ./fzf --height 40% --layout=reverse
-}
-
 function choose_kernel_version() {
-    KERNEL_BASE_URL=https://mirrors.edge.kernel.org/pub/linux/kernel/
-    color_print green bold "Please select the major version: "
-    major=$(echo -ne "2.6\n3.x\n4.x\n5.x\n" | tac |  fzf)
-    color_print green bold "Please select your exact version: "
-    your_version=$(curl -s "$KERNEL_BASE_URL"v"$major/" | grep -Eo 'linux\-[0-9]\.[0-9]+\.[0-9]+' | uniq | tac  | fzf)
-    if [ -f "${your_version}.tar.gz" ]; then
-        color_print green bold "Kernel already downloaded"
+    MAJOR_LINUX_VERSIONS=( 5.x 4.x 3.x 2.6 )
+    message=$( for version in "${MAJOR_LINUX_VERSIONS[@]}"; do echo $version; done )
+    prompt "Please select the major version: "
+    major_linux_version=$(echo "$message"| fzf)
+    prompt "Please select your exact version: "
+    linux_version=$(curl -s "$KERNEL_BASE_URL"v"$major_linux_version/" | grep -Eo 'linux\-[0-9]\.[0-9]+\.[0-9]+' | uniq | tac | fzf)
+    if [ -f "${linux_version}.tar.gz" ]; then
+        prompt "Kernel already downloaded"
     else
-        color_print green bold "Downloading kernel"
-        wget "$KERNEL_BASE_URL"v"$major/""$your_version".tar.gz
+        prompt "Downloading kernel"
+        wget "$KERNEL_BASE_URL"v"$major_linux_version/""$linux_version".tar.gz
     fi
-    color_print green bold "Extracting kernel"
-    tar xf "$your_version".tar.gz
-    kernel_version=$your_version
-    color_print green bold "Kernel downloaded and extracted"
+    prompt "Extracting kernel"
+    tar xf "$linux_version".tar.gz
+    kernel_version=$linux_version
+    prompt "Kernel downloaded and extracted"
 }
 
 function choose_kernel_rt_patch() {
     PATCH_BASE_URL=https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/
-    color_print green bold "Please select the major version: "
-    major=$(curl -s "$PATCH_BASE_URL" | grep -Eo '>[0-9]\.[0-9]{1,2}(\.[0-9]+)?\/' | sed 's|>||g' | sed 's|/||g' | tac | fzf)
-    color_print green bold "Please select your exact version: "
-    your_version=$(curl -s "$PATCH_BASE_URL$major"/ | grep -Eo '>patch\-.*patch.gz' | sed 's|>||g' | sed 's|.patch.gz||g'| tac | fzf)
-    wget  "$PATCH_BASE_URL$major"/"$your_version".patch.gz
+    prompt "Please select the major version: "
+    patch_major_version=$(curl -s "$PATCH_BASE_URL" | grep -Eo '>[0-9]\.[0-9]{1,2}(\.[0-9]+)?\/' | sed 's|>||g' | sed 's|/||g' | tac | fzf)
+    prompt "Please select your exact version: "
+    patch_version=$(curl -s "$PATCH_BASE_URL$patch_major_version"/ | grep -Eo '>patch\-.*patch.gz' | sed 's|>||g' | sed 's|.patch.gz||g'| tac | fzf)
+    if [ ! -f "$patch_version".patch.gz ] || [ ! -f "$patch_version".patch ]; then
+        prompt "Downloading patch"
+        wget "$PATCH_BASE_URL$patch_major_version"/"$patch_version".patch.gz
+    fi
     #get matching kernel version for your rt version
-    KERNEL_BASE_URL=https://mirrors.edge.kernel.org/pub/linux/kernel/
-    kernel_major="${major:0:1}.x"
-    kernel_version=$(echo "$your_version" | sed 's|patch|linux|g' | sed 's|-rt.*||g').tar.gz
-    color_print green bold "Downloading kernel"
-    wget "$KERNEL_BASE_URL"v"$kernel_major/""$kernel_version"
-    color_print green bold "Extracting kernel"
-    tar xf "$kernel_version"
-    gunzip "$your_version".patch.gz
-    cd "$topdir"/$(echo "$kernel_version" | sed 's|.tar.gz||g')
-    color_print green bold "Applying realtime patch"
-    patch -p1 < ../"$your_version".patch
+    major_linux_version="${patch_major_version:0:1}.x"
+    linux_version=$(echo "$patch_version" | sed 's|patch|linux|g' | sed 's|-rt.*||g').tar.gz
+    if [ -f "${linux_version}" ]; then
+        prompt "Kernel already downloaded"
+    else
+        prompt "Downloading kernel"
+        wget "$KERNEL_BASE_URL"v"$kernel_major/""$kernel_version"
+    fi
+    prompt "Extracting kernel"
+    tar xf "$linux_version"
+    gunzip "$patch_version".patch.gz
+    cd "$topdir"/$(echo "$linux_version" | sed 's|.tar.gz||g')
+    if [ ! -f .kernel_patched ]; then
+        prompt "Applying realtime patch"
+        patch -p1 < ../"$patch_version".patch
+        touch .kernel_patched
+    else
+        prompt "Kernel already patched"
+    fi
     cd "$topdir"
-    color_print green bold "Kernel downloaded, extracted, and patched"
+    prompt "Kernel downloaded, extracted, and patched"
 }
 
 function choose_busybox_version() {
-    color_print green bold "Please pick a busybox version:"
+    prompt "Please pick a busybox version:"
     BUSYBOX_BASE_URL=https://busybox.net/downloads/
     busybox_version=$(curl -s "$BUSYBOX_BASE_URL" | grep -Eo "busybox-[0-9]\.[0-9]+(\.[0-9])?.tar.bz2" | sed 's|.tar.bz2||g' | uniq | tac | fzf)
-    color_print green bold "Downloading busybox"
-    wget "$BUSYBOX_BASE_URL""$busybox_version".tar.bz2
-    color_print green bold "Busybox downloaded"
-    color_print green bold "Extracting busybox"
-    tar xf "$busybox_version".tar.bz2
-    color_print green bold "Busybox extracted"
+    if [ ! -f "$busybox_version".tar.bz2 ]; then
+        prompt "Downloading busybox"
+        wget "$BUSYBOX_BASE_URL""$busybox_version".tar.bz2
+        prompt "Busybox downloaded"
+        prompt "Extracting busybox"
+        tar xf "$busybox_version".tar.bz2
+        prompt "Busybox extracted"
+    elif [ ! -d ]
+        prompt "Extracting busybox"
+        tar xf "$busybox_version".tar.bz2
+        prompt "Busybox extracted"
+    else
+        prompt "Busybox already downloaded and extracted"
+    fi
 }
+
 
 function choose_syslinux_version() {
     if [ -z $SYSLINUX_VERSION ]; then
         SYSLINUX_BASE_URL=https://mirrors.edge.kernel.org/pub/linux/utils/boot/syslinux/
         SYSLINUX_VERSION=$(curl -s "$SYSLINUX_BASE_URL" | grep -Eo 'syslinux\-[0-9]\.[0-9]{2}\.tar\.gz' | uniq | tac | fzf)
-        color_print green bold "Downloading syslinux"
+        prompt "Downloading syslinux"
         wget "$SYSLINUX_BASE_URL""$SYSLINUX_VERSION"
-        color_print green bold "Extracting syslinux"
+        prompt "Extracting syslinux"
         tar xf "$SYSLINUX_VERSION"
-        color_print green bold "Syslinux downloaded and extracted"
+        prompt "Syslinux downloaded and extracted"
     else
-        color_print green bold "Downloading syslinux"
+        prompt "Downloading syslinux"
         wget https://mirrors.edge.kernel.org/pub/linux/utils/boot/syslinux/syslinux-"${SYSLINUX_VERSION}".tar.gz
-        color_print green bold "Extracting syslinux"
+        prompt "Extracting syslinux"
         tar xf syslinux-"${SYSLINUX_VERSION}".tar.gz
-        color_print green bold "Syslinux downloaded and extracted"
+        prompt "Syslinux downloaded and extracted"
     fi
 }
 
@@ -158,9 +175,9 @@ function make_busybox() {
 }
 
 function make_kernel() {
-    color_print green bold "Starting kernel configuration"
+    prompt "Starting kernel configuration"
     cd "$topdir"/$(echo "$kernel_version" | sed 's|.tar.gz||g')
-    color_print green bold "Starting kernel compilation"
+    prompt "Starting kernel compilation"
     case $KERNEL_CONFIG in
         defconfig*)  make_defconfig                  ;;
         modconfig*)  make_modconfig; install_modules ;;
@@ -179,8 +196,6 @@ function make_builtin() { yes '' | make mrproper localyesconfig bzImage -j$(npro
 function make_current() { get_current_config | yes '' | make mrproper bzImage modules -j$(nproc); }
 function get_current_config() { cp /boot/$(ls /boot | grep config) .config; }
 function install_modules() { make -j$(nproc) INSTALL_MOD_PATH="$topdir"/"$busybox_version"/_install modules_install; }
-
-
 
 function dvorak_setting() {
     if [ '$DVORAK' == 'yes' ]; then 
@@ -203,7 +218,7 @@ function make_iso() {
     cd "$topdir"/isoimage
     xorriso \
         -as mkisofs \
-        -o ../minimal_linux_live.iso \
+        -o ../tinylinux.iso \
         -b isolinux.bin \
         -c boot.cat \
         -no-emul-boot \
@@ -213,7 +228,9 @@ function make_iso() {
     cd "$topdir"
 }
 
-
+function wget() { wget "$@" -q --show-progress; }
+function fzf() { ./fzf --height 40% --layout=reverse ; }
+function prompt() { color_print green bold  "$@" ;}
 
 function color_print() {
     case "$1" in
@@ -243,5 +260,7 @@ function fancyf() {
 
 export FZF_DEFAULT_OPTS='--height 40% --layout=reverse'
 export FZF_DEFAULT_COMMAND='ls'
+KERNEL_BASE_URL=https://mirrors.edge.kernel.org/pub/linux/kernel/
+
 
 main "$@"
