@@ -115,7 +115,7 @@ function choose_busybox_version() {
         prompt "Extracting busybox"
         tar xf "$busybox_version".tar.bz2
         prompt "Busybox extracted"
-    elif [ ! -d "$busybox_version" ]
+    elif [ ! -d "$busybox_version" ]; then
         prompt "Extracting busybox"
         tar xf "$busybox_version".tar.bz2
         prompt "Busybox extracted"
