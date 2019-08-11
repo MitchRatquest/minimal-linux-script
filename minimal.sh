@@ -77,7 +77,6 @@ function choose_kernel_version() {
 }
 
 function choose_kernel_rt_patch() {
-    PATCH_BASE_URL=https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/
     prompt "Please select the major version: "
     patch_major_version=$(curl -s "$PATCH_BASE_URL" | grep -Eo '>[0-9]\.[0-9]{1,2}(\.[0-9]+)?\/' | sed 's|>||g' | sed 's|/||g' | tac | fzf)
     prompt "Please select your exact version: "
@@ -112,7 +111,6 @@ function choose_kernel_rt_patch() {
 
 function choose_busybox_version() {
     prompt "Please pick a busybox version:"
-    BUSYBOX_BASE_URL=https://busybox.net/downloads/
     busybox_version=$(curl -s "$BUSYBOX_BASE_URL" | grep -Eo "busybox-[0-9]\.[0-9]+(\.[0-9])?.tar.bz2" | sed 's|.tar.bz2||g' | uniq | tac | fzf)
     if [ ! -f "$busybox_version".tar.bz2 ]; then
         prompt "Downloading busybox"
@@ -133,7 +131,6 @@ function choose_busybox_version() {
 
 function choose_syslinux_version() {
     if [ -z $SYSLINUX_VERSION ]; then
-        SYSLINUX_BASE_URL=https://mirrors.edge.kernel.org/pub/linux/utils/boot/syslinux/
         SYSLINUX_VERSION=$(curl -s "$SYSLINUX_BASE_URL" | grep -Eo 'syslinux\-[0-9]\.[0-9]{2}\.tar\.gz' | uniq | tac | fzf)
     else #we already have the default version at the top of this file
         if [ ! -f "$SYSLINUX_VERSION" ]; then
@@ -269,6 +266,8 @@ function fancyf() {
 export FZF_DEFAULT_OPTS='--height 40% --layout=reverse'
 export FZF_DEFAULT_COMMAND='ls'
 KERNEL_BASE_URL=https://mirrors.edge.kernel.org/pub/linux/kernel/
-
+SYSLINUX_BASE_URL=https://mirrors.edge.kernel.org/pub/linux/utils/boot/syslinux/
+PATCH_BASE_URL=https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/
+BUSYBOX_BASE_URL=https://busybox.net/downloads/
 
 main "$@"
