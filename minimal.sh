@@ -2,10 +2,13 @@
 set -e
 KERNEL_VERSION=5.0.2
 BUSYBOX_VERSION=1.30.1
-SYSLINUX_VERSION=6.03
-#shipped defconfig vs current kernel's config, modules vs built-in
+SYSLINUX_VERSION=syslinux-6.03.tar.gz
 #defconfig modconfig builtin current
 KERNEL_CONFIG=defconfig
+#defconfig = linux kernel defconfig
+#modconfig = current running kernel's config, only the modules currently loaded, aka output of lsmod
+#builtin = modconfig, but built in instead of modules, no modules directory created
+#current = current kernel's config, warning could result in huge module directory!
 #iso sizes:
 #defconfig: about 6MB
 #builtin:   about 9MB
@@ -24,14 +27,15 @@ function main() {
     fi
     choose_busybox_version
     choose_syslinux_version
+
     make_overlay
     make_busybox
     make_kernel
 
     dvorak_setting
     apply_overlay
-    compress_initrd
 
+    compress_initrd
     make_iso
 }
 
@@ -64,8 +68,10 @@ function choose_kernel_version() {
         prompt "Downloading kernel"
         wget "$KERNEL_BASE_URL"v"$major_linux_version/""$linux_version".tar.gz
     fi
-    prompt "Extracting kernel"
-    tar xf "$linux_version".tar.gz
+    if [ ! -d "${linux_version}" ]; then
+        prompt "Extracting kernel"
+        tar xf "$linux_version".tar.gz
+    fi
     kernel_version=$linux_version
     prompt "Kernel downloaded and extracted"
 }
@@ -129,23 +135,24 @@ function choose_syslinux_version() {
     if [ -z $SYSLINUX_VERSION ]; then
         SYSLINUX_BASE_URL=https://mirrors.edge.kernel.org/pub/linux/utils/boot/syslinux/
         SYSLINUX_VERSION=$(curl -s "$SYSLINUX_BASE_URL" | grep -Eo 'syslinux\-[0-9]\.[0-9]{2}\.tar\.gz' | uniq | tac | fzf)
-        prompt "Downloading syslinux"
-        wget "$SYSLINUX_BASE_URL""$SYSLINUX_VERSION"
-        prompt "Extracting syslinux"
-        tar xf "$SYSLINUX_VERSION"
-        prompt "Syslinux downloaded and extracted"
-    else
-        prompt "Downloading syslinux"
-        wget https://mirrors.edge.kernel.org/pub/linux/utils/boot/syslinux/syslinux-"${SYSLINUX_VERSION}".tar.gz
-        prompt "Extracting syslinux"
-        tar xf syslinux-"${SYSLINUX_VERSION}".tar.gz
+    else #we already have the default version at the top of this file
+        if [ ! -f "$SYSLINUX_VERSION" ]; then
+            prompt "Downloading syslinux"
+            wget "$SYSLINUX_BASE_URL""$SYSLINUX_VERSION"
+        fi
+
+        if [ ! -d $(echo "$SYSLINUX_VERSION" | sed 's|.tar.gz||g') ]; then
+
+            prompt "Extracting syslinux"
+            tar xf "$SYSLINUX_VERSION"
+            prompt "Syslinux downloaded and extracted"
+        fi
         prompt "Syslinux downloaded and extracted"
     fi
 }
 
 function exists() { [ -e "$1" ]; }
 function doesnt_exist() { [ ! -e "$1" ]; }
-function make() { make -j$(nproc) "$@"; }
 
 function make_overlay() {
     cd "$topdir"
@@ -156,10 +163,11 @@ function make_overlay() {
 
 function make_busybox() {
     cd "$topdir"/"${busybox_version}"
-    if exists _install; then
+    if [ -e _install ]; then
         rm -rf _install
     fi
-    make distclean defconfig
+    make clean
+    make mrproper defconfig
     sed -i "s|.*CONFIG_STATIC.*|CONFIG_STATIC=y|" .config
     make busybox install -j$(nproc)
     cd _install
@@ -186,11 +194,11 @@ function make_kernel() {
     esac        
     cp arch/x86/boot/bzImage "$topdir"/isoimage/kernel.gz
     cd "$topdir"/isoimage
-    cp "$topdir"/$(echo syslinux-"${SYSLINUX_VERSION}" | sed 's|.tar.gz||g')/bios/core/isolinux.bin .
-    cp "$topdir"/$(echo syslinux-"${SYSLINUX_VERSION}" | sed 's|.tar.gz||g')/bios/com32/elflink/ldlinux/ldlinux.c32 .
+    cp "$topdir"/$(echo "${SYSLINUX_VERSION}" | sed 's|.tar.gz||g')/bios/core/isolinux.bin .
+    cp "$topdir"/$(echo "${SYSLINUX_VERSION}" | sed 's|.tar.gz||g')/bios/com32/elflink/ldlinux/ldlinux.c32 .
     echo 'default kernel.gz initrd=rootfs.gz' > isolinux.cfg
 }
-function make_defconfig() { yes '' | make mrproper bzImage -j$(nproc); }
+function make_defconfig() { yes '' | make mrproper ARCH=x86_64 defconfig bzImage -j$(nproc); }
 function make_modconfig() { yes '' | make mrproper localmodconfig bzImage modules -j$(nproc); }
 function make_builtin() { yes '' | make mrproper localyesconfig bzImage -j$(nproc);  }
 function make_current() { get_current_config | yes '' | make mrproper bzImage modules -j$(nproc); }
@@ -228,7 +236,7 @@ function make_iso() {
     cd "$topdir"
 }
 
-function wget() { wget "$@" -q --show-progress; }
+function wget() { $(realpath $(which wget)) "$@" -q --show-progress; }
 function fzf() { ./fzf --height 40% --layout=reverse ; }
 function prompt() { color_print green bold  "$@" ;}
 
