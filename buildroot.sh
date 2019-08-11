@@ -23,12 +23,13 @@ function get_buildroot() {
         cd buildroot
         git checkout "$commit"
     fi
+    cd "$TOPDIR"
 }
 
 function set_configurations() {
     cd "$TOPDIR"
     if [ ! -f .initial_br ]; then
-        make O=$PWD -C buildroot/ defconfig BR2_DEFCONFIG=../br_defconfig
+        make O=$(pwd) -C buildroot/ defconfig BR2_DEFCONFIG=../br_defconfig
         touch .initial_br
     fi
 }
