@@ -92,7 +92,7 @@ function choose_kernel_rt_patch() {
         prompt "Kernel already downloaded"
     else
         prompt "Downloading kernel"
-        wget "$KERNEL_BASE_URL"v"$kernel_major/""$kernel_version"
+        wget "$KERNEL_BASE_URL"v"$major_linux_version/""$kernel_version"
     fi
     prompt "Extracting kernel"
     tar xf "$linux_version"
