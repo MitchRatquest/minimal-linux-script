@@ -142,7 +142,6 @@ function choose_syslinux_version() {
 
             prompt "Extracting syslinux"
             tar xf "$SYSLINUX_VERSION"
-            prompt "Syslinux downloaded and extracted"
         fi
         prompt "Syslinux downloaded and extracted"
     fi
