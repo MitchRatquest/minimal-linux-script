@@ -14,7 +14,10 @@ While I'm rather fond of buildroot, I think the fzf finder to choose a linux ker
 
 # Using minimal.sh
 
-You can run `minimal.sh` and follow the prompts. It uses a fuzzy finder, so you can either type and it will select the best match, use the arrow keys, page up/down, or double click with a mouse to select your entry. The default options are the latest versions. 
+You can run `./minimal.sh` and follow the prompts. It uses a fuzzy finder, so you can either type and it will select the best match, use the arrow keys, page up/down, or double click with a mouse to select your entry. The default options are the latest versions. 
 
 Please note that any kernel after 4.19 requires GCC to be at least 4.6.0. 
 
+# Using buildroot.sh
+
+run `./buildroot.sh` and wait about 30 minutes. This'll generate a basic iso, just like minimal, but with some added options. Notably, the entire buildroot infrastructure of packages, tons more options, external toolchains, whatever. If you don't want to build a billion dependencies, you can also add any binary to the EXTRA_PACKAGES variable in the buildroot.sh script. This'll use static-get to throw stuff into the overlay. This is a workaround for possibly shipping a buildroot system with gcc on it, for example. 

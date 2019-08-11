@@ -3,6 +3,8 @@
 #for example: EXTRA_PACKAGES=(gcc bash gawk)
 EXTRA_PACKAGES=()
 DVORAK_KEYBOARD=no
+#no extra packages, no dvorak:
+#br-rootfs.iso:    not-sure-yet MB
 
 function main() {
     get_buildroot
@@ -40,9 +42,6 @@ function create_overlay() {
 }
 
 function populate_overlay() {
-    create_sysvinit 'S99-dvorak' '#!/bin/sh
-loadkmap < /usr/share/kmaps/dvorak.kmap
-exit 0'
     create_sysvinit 'S98-networkup' '#!/bin/sh
 ip link set up eth0
 udhcpc eth0
@@ -52,8 +51,11 @@ exit 0'
 
 
 function install_dvorak_kmap() {
-    if [ "DVORAK_KEYBOARD" == 'yes' ]; then
+    if [ "$DVORAK_KEYBOARD" == 'yes' ]; then
         install_a_file usr/share/kmaps dvorak.kmap
+        create_sysvinit 'S99-dvorak' '#!/bin/sh
+loadkmap < /usr/share/kmaps/dvorak.kmap
+exit 0'
     fi
 }
 
