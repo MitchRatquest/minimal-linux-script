@@ -209,7 +209,7 @@ function dvorak_setting() {
 }
 
 function apply_overlay() {
-    cp -a "$overlay"/* "$topdir"/"${busybox_version}"/_install
+    cp -a "$overlay/" "$topdir"/"${busybox_version}"/_install
 }
 
 function compress_initrd() {
@@ -232,7 +232,8 @@ function make_iso() {
 }
 
 function wget() { $(realpath $(which wget)) "$@" -q --show-progress; }
-function fzf() { ./fzf --height 40% --layout=reverse ; }
+function current_terminal_height() { echo -ne "$LINES"; }
+function fzf() { ./fzf -d $($((current_terminal_height - 5)) ) --height 40% --layout=reverse ; }
 function prompt() { color_print green bold  "$@" ;}
 
 function color_print() {
