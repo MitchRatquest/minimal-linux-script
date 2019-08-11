@@ -157,5 +157,5 @@ function color_print() {
     printf "${color}${modifier}$@${nocolor}\n"
 }
 
-TOPDIR=`pwd`
+TOPDIR=$(pwd)
 main "$@"
