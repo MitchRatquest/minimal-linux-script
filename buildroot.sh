@@ -4,7 +4,8 @@
 EXTRA_PACKAGES=()
 DVORAK_KEYBOARD=no
 #no extra packages, no dvorak:
-#br-rootfs.iso:    not-sure-yet MB
+#br-rootfs.iso:    16 MB
+#actual space used on rootfs: 9.1 MB
 
 function main() {
     get_buildroot
