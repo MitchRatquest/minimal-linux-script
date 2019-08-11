@@ -179,7 +179,7 @@ function make_busybox() {
 
 function make_kernel() {
     prompt "Starting kernel configuration"
-    cd "$topdir"/$(echo "$kernel_version" | sed 's|.tar.gz||g')
+    cd "$topdir"/$(echo "$linux_version" )
     prompt "Starting kernel compilation"
     case $KERNEL_CONFIG in
         defconfig*)  make_defconfig                  ;;
