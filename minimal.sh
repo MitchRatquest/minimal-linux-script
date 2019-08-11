@@ -66,7 +66,7 @@ function choose_kernel_version() {
         prompt "Kernel already downloaded"
     else
         prompt "Downloading kernel"
-        wget "$KERNEL_BASE_URL"v"$major_linux_version/""$linux_version".tar.gz
+        wget "$KERNEL_BASE_URL"v"$major_linux_version"/"$linux_version".tar.gz
     fi
     if [ ! -d "${linux_version}" ]; then
         prompt "Extracting kernel"
@@ -87,12 +87,12 @@ function choose_kernel_rt_patch() {
     fi
     #get matching kernel version for your rt version
     major_linux_version="${patch_major_version:0:1}.x"
-    linux_version=$(echo "$patch_version" | sed 's|patch|linux|g' | sed 's|-rt.*||g').tar.gz
-    if [ -f "${linux_version}" ]; then
+    linux_version=$(echo "$patch_version" | sed 's|patch|linux|g' | sed 's|-rt.*||g')
+    if [ -f "$linux_version".tar.gz ]; then
         prompt "Kernel already downloaded"
     else
         prompt "Downloading kernel"
-        wget "$KERNEL_BASE_URL"v"$major_linux_version/""$kernel_version"
+        wget "$KERNEL_BASE_URL"v"$major_linux_version"/"$linux_version".tar.gz
     fi
     prompt "Extracting kernel"
     tar xf "$linux_version"
