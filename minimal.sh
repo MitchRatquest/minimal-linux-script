@@ -60,8 +60,10 @@ function choose_kernel_version() {
     message=$( for version in "${MAJOR_LINUX_VERSIONS[@]}"; do echo $version; done )
     prompt "Please select the major version: "
     major_linux_version=$(echo "$message"| fzf)
+    response_prompt "$major_linux_version"
     prompt "Please select your exact version: "
     linux_version=$(curl -s "$KERNEL_BASE_URL"v"$major_linux_version/" | grep -Eo 'linux\-[0-9]\.[0-9]+\.[0-9]+' | uniq | tac | fzf)
+    response_prompt "$linux_version"
     if [ -f "$linux_version".tar.gz ]; then
         prompt "Kernel already downloaded"
     else
@@ -79,8 +81,10 @@ function choose_kernel_version() {
 function choose_kernel_rt_patch() {
     prompt "Please select the major version: "
     patch_major_version=$(curl -s "$PATCH_BASE_URL" | grep -Eo '>[0-9]\.[0-9]{1,2}(\.[0-9]+)?\/' | sed 's|>||g' | sed 's|/||g' | tac | fzf)
+    response_prompt "$patch_major_version"
     prompt "Please select your exact version: "
     patch_version=$(curl -s "$PATCH_BASE_URL$patch_major_version"/ | grep -Eo '>patch\-.*patch.gz' | sed 's|>||g' | sed 's|.patch.gz||g'| tac | fzf)
+    response_prompt "$patch_version"
     if [ ! -f "$patch_version".patch.gz ] || [ ! -f "$patch_version".patch ]; then
         prompt "Downloading patch"
         wget "$PATCH_BASE_URL$patch_major_version"/"$patch_version".patch.gz
@@ -112,6 +116,7 @@ function choose_kernel_rt_patch() {
 function choose_busybox_version() {
     prompt "Please pick a busybox version:"
     busybox_version=$(curl -s "$BUSYBOX_BASE_URL" | grep -Eo "busybox-[0-9]\.[0-9]+(\.[0-9])?.tar.bz2" | sed 's|.tar.bz2||g' | uniq | tac | fzf)
+    response_prompt "$busybox_version"
     if [ ! -f "$busybox_version".tar.bz2 ]; then
         prompt "Downloading busybox"
         wget "$BUSYBOX_BASE_URL""$busybox_version".tar.bz2
@@ -131,6 +136,7 @@ function choose_busybox_version() {
 function choose_syslinux_version() {
     if [ -z $SYSLINUX_VERSION ]; then
         SYSLINUX_VERSION=$(curl -s "$SYSLINUX_BASE_URL" | grep -Eo 'syslinux\-[0-9]\.[0-9]{2}\.tar\.gz' | uniq | tac | fzf)
+	response_prompt "$SYSLINUX_VERSION"
     else #we already have the default version at the top of this file
         if [ ! -f "$SYSLINUX_VERSION" ]; then
             prompt "Downloading syslinux"
@@ -235,6 +241,7 @@ function wget() { $(realpath $(which wget)) "$@" -q --show-progress; }
 function current_terminal_height() { echo -ne "$LINES"; }
 function fzf() { ./fzf -d $(($(current_terminal_height) - 5))  --height 40% --layout=reverse ; }
 function prompt() { color_print green bold  "$@" ;}
+function response_prompt() { color_print orange bold "You chose $@"; }
 
 function color_print() {
     case "$1" in
