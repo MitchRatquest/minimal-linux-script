@@ -26,7 +26,7 @@ Please note that any kernel after 4.19 requires GCC to be at least 4.6.0.
 run `./buildroot.sh` and wait about 30 minutes. This'll generate a basic iso, just like minimal, but with some added options. Notably, the entire buildroot infrastructure of packages, tons more options, external toolchains, whatever. If you don't want to build a billion dependencies, you can also add any binary to the EXTRA_PACKAGES variable in the buildroot.sh script. This'll use static-get to throw stuff into the overlay. This is a workaround for possibly shipping a buildroot system with gcc on it, for example.
 
 At the end, it runs:
-`cp images/rootfs.iso9660 br-rootfs.iso
+`cp images/rootfs.iso9660 br-rootfs.iso; 
 qemu-system-x86_64 -m 512M -cdrom br-rootfs.iso -boot d -vga std -smp 4 -device e1000`
 
 # minimal.sh example
