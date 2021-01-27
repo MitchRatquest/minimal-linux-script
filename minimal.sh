@@ -1,8 +1,9 @@
 #!/bin/bash
 set -e
-KERNEL_VERSION=5.0.2
-BUSYBOX_VERSION=1.30.1
+KERNEL_VERSION=5.9.16
+BUSYBOX_VERSION=1.33.0
 SYSLINUX_VERSION=syslinux-6.03.tar.gz
+FZF_VERSION=0.25.0
 #defconfig modconfig builtin current
 KERNEL_CONFIG=defconfig
 #defconfig = linux kernel defconfig
@@ -49,7 +50,7 @@ function install_fzf() {
            386*)    target=386   ;;
            amd64*)  target=amd64 ;;
        esac
-       wget -q "https://github.com/junegunn/fzf-bin/releases/download/0.18.0/fzf-0.18.0-linux_${target}.tgz" -O fzf.tgz
+       wget -q "https://github.com/junegunn/fzf/releases/download/${FZF_VERSION}/fzf-${FZF_VERSION}-linux_${target}.tar.gz" -O fzf.tgz
        tar xvf fzf.tgz
        rm fzf.tgz
    fi
@@ -168,7 +169,7 @@ function make_busybox() {
         rm -rf _install
     fi
     make clean
-    make mrproper defconfig
+    yes | make mrproper defconfig
     sed -i "s|.*CONFIG_STATIC.*|CONFIG_STATIC=y|" .config
     make busybox install -j$(nproc)
     cd _install
