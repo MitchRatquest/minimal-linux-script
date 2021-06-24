@@ -84,7 +84,7 @@ function choose_kernel_rt_patch() {
     patch_major_version=$(curl -s "$PATCH_BASE_URL" | grep -Eo '>[0-9]\.[0-9]{1,2}(\.[0-9]+)?\/' | sed 's|>||g' | sed 's|/||g' | tac | fzf)
     response_prompt "$patch_major_version"
     prompt "Please select your exact version: "
-    patch_version=$(curl -s "$PATCH_BASE_URL$patch_major_version"/ | grep -Eo '>patch\-.*patch.gz' | sed 's|>||g' | sed 's|.patch.gz||g'| tac | fzf)
+    patch_version=$(curl -s "$PATCH_BASE_URL$patch_major_version"/ | grep -Eo '>patch\-.*patch.gz' | sed 's|>||g' | sed 's|.patch.gz||g'| sort --version-sort | tac | fzf)
     response_prompt "$patch_version"
     if [ ! -f "$patch_version".patch.gz ] || [ ! -f "$patch_version".patch ]; then
         prompt "Downloading patch"
@@ -134,6 +134,25 @@ function choose_busybox_version() {
     fi
 }
 
+function choose_grub_version() {
+    prompt "Please pick a grub version:"
+    grub_version=$(curl -s "$GRUB_BASE_URL" | grep -Eo "grub-[0-9]\.[0-9]+?.tar.xz" | sed 's|.tar.xz||g' | uniq | tac | fzf)
+    response_prompt "$grub_version"
+    if [ ! -f "$grub_version".tar.xz ]; then
+        prompt "Downloading grub"
+        wget "$GRUB_BASE_URL""$grub_version".tar.xz
+        prompt "Grub downloaded"
+        prompt "Extracting grub"
+        tar xf "$grub_version".tar.xz
+        prompt "Grub extracted"
+    elif [ ! -d "$grub_version" ]; then
+        prompt "Extracting grub"
+        tar xf "$grub_version".tar.xz
+        prompt "Grub extracted"
+    else
+        prompt "Grub already downloaded and extracted"
+    fi
+}
 function choose_syslinux_version() {
     if [ -z $SYSLINUX_VERSION ]; then
         SYSLINUX_VERSION=$(curl -s "$SYSLINUX_BASE_URL" | grep -Eo 'syslinux\-[0-9]\.[0-9]{2}\.tar\.gz' | uniq | tac | fzf)
@@ -182,6 +201,13 @@ function make_busybox() {
     echo 'mount -t sysfs none /sys' >> init
     echo 'setsid cttyhack /bin/sh' >> init
     chmod +x init
+}
+
+function make_grub() {
+    cd "$topdir/$grub_vesion"
+    ./autogen.sh
+    ./configure
+    make -j$(nproc)
 }
 
 function make_kernel() {
@@ -276,5 +302,6 @@ KERNEL_BASE_URL=https://mirrors.edge.kernel.org/pub/linux/kernel/
 SYSLINUX_BASE_URL=https://mirrors.edge.kernel.org/pub/linux/utils/boot/syslinux/
 PATCH_BASE_URL=https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/
 BUSYBOX_BASE_URL=https://busybox.net/downloads/
+GRUB_BASE_URL=ftp://ftp.gnu.org/gnu/grub/
 
-main "$@"
+[[ "$0" == *minimal* ]] && main "$@"
