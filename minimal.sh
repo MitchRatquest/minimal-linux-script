@@ -189,7 +189,7 @@ function make_busybox() {
 
 function make_kernel() {
     prompt "Starting kernel configuration"
-    cd "$topdir"/$(echo "$linux_version" )
+    cd "$topdir/$linux_version"
     prompt "Starting kernel compilation"
     case $KERNEL_CONFIG in
         defconfig*)  make_defconfig                  ;;
@@ -206,13 +206,12 @@ function make_kernel() {
 function make_defconfig() { yes '' | make mrproper ARCH=x86_64 defconfig bzImage -j$(nproc); }
 function make_modconfig() { yes '' | make mrproper localmodconfig bzImage modules -j$(nproc); }
 function make_builtin() { yes '' | make mrproper localyesconfig bzImage -j$(nproc);  }
-function make_current() { get_current_config | yes '' | make mrproper bzImage modules -j$(nproc); }
+function make_current() { get_current_config;  yes '' | make bzImage modules -j$(nproc); }
 function get_current_config() {
     local kernel_version=$(uname -r)
-    local config_file=$(ls /boot | grep "$kernel_version" | grep config)
     # Remove any color or other bashisms
     # https://stackoverflow.com/a/18000433
-    config_file=$(echo "$config_file" | sed -r "s/\x1B\[([0-9]{1,3}(;[0-9]{1,2};?)?)?[mGK]//g")
+    local config_file=$(ls /boot | grep "$kernel_version" | grep config | sed -r "s/\x1B\[([0-9]{1,3}(;[0-9]{1,2};?)?)?[mGK]//g")
     cp /boot/"$config_file" .config
 }
 
