@@ -57,7 +57,7 @@ function install_fzf() {
 }
 
 function choose_kernel_version() {
-    MAJOR_LINUX_VERSIONS=( 5.x 4.x 3.x 2.6 )
+    MAJOR_LINUX_VERSIONS=( 6.x 5.x 4.x 3.x 2.6 )
     message=$( for version in "${MAJOR_LINUX_VERSIONS[@]}"; do echo $version; done )
     prompt "Please select the major version: "
     major_linux_version=$(echo "$message"| fzf)
@@ -171,6 +171,9 @@ function make_busybox() {
     make clean
     yes | make mrproper defconfig
     sed -i "s|.*CONFIG_STATIC.*|CONFIG_STATIC=y|" .config
+    sed -i "s|.*CONFIG_TC.*|# CONFIG_TC is not set|" .config
+    sed -i "s|.*CONFIG_FEATURE_TC_INGRESS.*|# CONFIG_FEATURE_TC_INGRESS is not set|" .config
+    sed -i "s|.*CONFIG_FEATURE_IPV6.*|# CONFIG_FEATURE_IPV6 is not set|" .config
     make busybox install -j$(nproc)
     cd _install
     rm -f linuxrc
