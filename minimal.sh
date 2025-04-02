@@ -35,6 +35,7 @@ function main() {
 
     dvorak_setting
     apply_overlay
+    #copy_firmware
 
     compress_initrd
     make_iso
@@ -211,7 +212,7 @@ function get_current_config() {
     local kernel_version=$(uname -r)
     # Remove any color or other bashisms
     # https://stackoverflow.com/a/18000433
-    local config_file=$(ls /boot | grep "$kernel_version" | grep config | sed -r "s/\x1B\[([0-9]{1,3}(;[0-9]{1,2};?)?)?[mGK]//g")
+    local config_file=$(ls /boot | grep --color=never "$kernel_version" | grep --color=never config)
     cp /boot/"$config_file" .config
 }
 
@@ -232,6 +233,16 @@ function apply_overlay() {
 function compress_initrd() {
     cd "$topdir"/"${busybox_version}"/_install && find . | cpio -R root:root -H newc -o | gzip > "$topdir"/isoimage/rootfs.gz
     cd -
+}
+
+function copy_firmware() {
+    # find all the files which have been accessed since boot
+    days_uptime=$(uptime | grep -Eo --color=never '[0-9]+ days' | sed 's|days||g' | sed 's| ||g')
+    if [ -z "$days_uptime" ]; then
+        days_uptime=1
+    fi
+    cd "$topdir"
+    find /lib/firmware -depth -print -atime "$days_uptime" | cpio -pvd overlay
 }
 
 function make_iso() {
