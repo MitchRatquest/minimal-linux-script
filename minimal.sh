@@ -63,7 +63,7 @@ function choose_kernel_version() {
     major_linux_version=$(echo "$message"| fzf)
     response_prompt "$major_linux_version"
     prompt "Please select your exact version: "
-    linux_version=$(curl -s "$KERNEL_BASE_URL"v"$major_linux_version/" | grep -Eo 'linux\-[0-9]\.[0-9]+\.[0-9]+' | uniq | tac | fzf)
+    linux_version=$(curl -s "$KERNEL_BASE_URL"v"$major_linux_version/" | grep -Eo 'linux\-[0-9]\.[0-9]+(\.[0-9]+)?' | uniq | tac | fzf)
     response_prompt "$linux_version"
     if [ -f "$linux_version".tar.gz ]; then
         prompt "Kernel already downloaded"
@@ -207,7 +207,15 @@ function make_defconfig() { yes '' | make mrproper ARCH=x86_64 defconfig bzImage
 function make_modconfig() { yes '' | make mrproper localmodconfig bzImage modules -j$(nproc); }
 function make_builtin() { yes '' | make mrproper localyesconfig bzImage -j$(nproc);  }
 function make_current() { get_current_config | yes '' | make mrproper bzImage modules -j$(nproc); }
-function get_current_config() { cp /boot/$(ls /boot | grep config) .config; }
+function get_current_config() {
+    local kernel_version=$(uname -r)
+    local config_file=$(ls /boot | grep "$kernel_version" | grep config)
+    # Remove any color or other bashisms
+    # https://stackoverflow.com/a/18000433
+    config_file=$(echo "$config_file" | sed -r "s/\x1B\[([0-9]{1,3}(;[0-9]{1,2};?)?)?[mGK]//g")
+    cp /boot/"$config_file" .config
+}
+
 function install_modules() { make -j$(nproc) INSTALL_MOD_PATH="$topdir"/"$busybox_version"/_install modules_install; }
 
 function dvorak_setting() {
