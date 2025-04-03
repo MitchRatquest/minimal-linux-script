@@ -202,7 +202,7 @@ function make_kernel() {
     cd "$topdir"/isoimage
     cp "$topdir"/$(echo "${SYSLINUX_VERSION}" | sed 's|.tar.gz||g')/bios/core/isolinux.bin .
     cp "$topdir"/$(echo "${SYSLINUX_VERSION}" | sed 's|.tar.gz||g')/bios/com32/elflink/ldlinux/ldlinux.c32 .
-    echo 'default kernel.gz initrd=rootfs.gz' > isolinux.cfg
+    echo 'default kernel.gz initrd=rootfs.gz console=ttyS0 loglevel=9' > isolinux.cfg
 }
 function make_defconfig() { yes '' | make mrproper ARCH=x86_64 defconfig bzImage -j$(nproc); }
 function make_modconfig() { yes '' | make mrproper localmodconfig bzImage modules -j$(nproc); }
@@ -237,6 +237,7 @@ function compress_initrd() {
 
 function copy_firmware() {
     # find all the files which have been accessed since boot
+    # https://stackoverflow.com/a/13385076
     days_uptime=$(uptime | grep -Eo --color=never '[0-9]+ days' | sed 's|days||g' | sed 's| ||g')
     if [ -z "$days_uptime" ]; then
         days_uptime=1
