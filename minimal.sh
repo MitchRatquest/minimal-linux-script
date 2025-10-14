@@ -64,7 +64,7 @@ function choose_kernel_version() {
     major_linux_version=$(echo "$message"| fzf)
     response_prompt "$major_linux_version"
     prompt "Please select your exact version: "
-    linux_version=$(curl -s "$KERNEL_BASE_URL"v"$major_linux_version/" | grep -Eo 'linux\-[0-9]\.[0-9]+(\.[0-9]+)?' | uniq | tac | fzf)
+    linux_version=$(curl -s "$KERNEL_BASE_URL"v"$major_linux_version/" | grep -Eo 'linux\-[0-9]\.[0-9]+(\.[0-9]+)?' | uniq | sort -Vr | fzf)
     response_prompt "$linux_version"
     if [ -f "$linux_version".tar.gz ]; then
         prompt "Kernel already downloaded"
